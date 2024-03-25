@@ -1,0 +1,102 @@
+$ ./azure-storage-test -a <ACCOUNT> -c <CONTAINER> "path/to/big/blob.zip"
+Downloading https://<ACCOUNT>.blob.core.windows.net/<CONTAINER>/path/to/big/blob.zip to /home/mattiasb/Downloads/azure-blob-test/path/to/big/blob.zip...
+# ← Here I turned on the network latency
+Unable to stream download: HTTPSConnectionPool(host='<ACCOUNT>.blob.core.windows.net', port=443): Read timed out.
+Unable to stream download: HTTPSConnectionPool(host='<ACCOUNT>.blob.core.windows.net', port=443): Read timed out.
+Unable to stream download: HTTPSConnectionPool(host='<ACCOUNT>.blob.core.windows.net', port=443): Read timed out.
+Unable to stream download: HTTPSConnectionPool(host='<ACCOUNT>.blob.core.windows.net', port=443): Read timed out.
+Unable to stream download: HTTPSConnectionPool(host='<ACCOUNT>.blob.core.windows.net', port=443): Read timed out.
+Retrying in 1.834397259055176 seconds...
+Retrying in 5.875110632008607 seconds...
+Retrying in 9.98671460031896 seconds...
+Retrying in 18.333025457780145 seconds...
+Retrying in 15.768018647874385 seconds...
+Retrying in 19.757869644985163 seconds...
+Retrying in 63.056203251645485 seconds...
+Retrying in 60.72780358551788 seconds...
+Retrying in 67.72874742785558 seconds...
+# ← Here I turned *off* the network latency again
+Traceback (most recent call last):
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/urllib3/response.py", line 737, in _error_catcher
+    yield
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/urllib3/response.py", line 862, in _raw_read
+    data = self._fp_read(amt, read1=read1) if not fp_closed else b""
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/urllib3/response.py", line 845, in _fp_read
+    return self._fp.read(amt) if amt is not None else self._fp.read()
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/http/client.py", line 479, in read
+    s = self.fp.read(amt)
+        ^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/socket.py", line 707, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/ssl.py", line 1252, in recv_into
+    return self.read(nbytes, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/ssl.py", line 1104, in read
+    return self._sslobj.read(len, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/requests/models.py", line 816, in generate
+    yield from self.raw.stream(chunk_size, decode_content=True)
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/urllib3/response.py", line 1043, in stream
+    data = self.read(amt=amt, decode_content=decode_content)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/urllib3/response.py", line 935, in read
+    data = self._raw_read(amt)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/urllib3/response.py", line 861, in _raw_read
+    with self._error_catcher():
+  File "/usr/lib64/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/urllib3/response.py", line 742, in _error_catcher
+    raise ReadTimeoutError(self._pool, None, "Read timed out.") from e  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='<ACCOUNT>.blob.core.windows.net', port=443): Read timed out.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/mattiasb/Code/github.com/mattiasb/blob-issue/./azure-storage-test", line 114, in <module>
+    main()
+  File "/home/mattiasb/Code/github.com/mattiasb/blob-issue/./azure-storage-test", line 106, in main
+    download_blob(
+  File "/home/mattiasb/Code/github.com/mattiasb/blob-issue/./azure-storage-test", line 70, in download_blob
+    size = client.download_blob(max_concurrency=5).readinto(blob_dest_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/azure/storage/blob/_download.py", line 769, in readinto
+    list(executor.map(
+  File "/usr/lib64/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib64/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/azure/storage/blob/_download.py", line 128, in process_chunk
+    chunk_data = self._download_chunk(chunk_start, chunk_end - 1)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/azure/storage/blob/_download.py", line 214, in _download_chunk
+    chunk_data = process_content(response, offset[0], offset[1], self.encryption_options)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/azure/storage/blob/_download.py", line 47, in process_content
+    content = b"".join(list(data))
+                       ^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/azure/core/pipeline/transport/_requests_basic.py", line 178, in __next__
+    chunk = next(self.iter_content_func)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mattiasb/.cache/direnv/layouts/blob-issue-812e40a64bb367167093b0d4447d1c80428df739/python-3.12/lib64/python3.12/site-packages/requests/models.py", line 822, in generate
+    raise ConnectionError(e)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='<ACCOUNT>.blob.core.windows.net', port=443): Read timed out.

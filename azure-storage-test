@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+
+from azure.storage.blob import ExponentialRetry  # type: ignore
+from azure.identity import DefaultAzureCredential  # type: ignore
+
+from azure.storage.blob import (
+    BlobClient,
+    BlobServiceClient,
+)
+
+from argparse import ArgumentParser
+
+
+class MaxExponentialRetry(ExponentialRetry):
+    """Exponential retry policy with a maximum backoff."""
+
+    def __init__(self, max_backoff=120, **kwargs):
+        self.max_backoff = max_backoff
+        super().__init__(**kwargs)
+
+    def get_backoff_time(self, settings):
+        backoff = min(self.max_backoff, super().get_backoff_time(settings))
+        print(f"Retrying in {backoff} seconds...")
+        return backoff
+
+
+def retry_policy():
+    """A retry policy that should get us around 1s, 5s, 17s, 65s, 120s, 120s
+    backoffs with a ±5s jitter."""
+    return MaxExponentialRetry(
+        initial_backoff=1,
+        max_backoff=120,
+        increment_base=4,
+        random_jitter_range=5,
+        retry_total=5,
+        retry_connect=5,
+        retry_read=5,
+        retry_status=5,
+    )
+
+
+def get_blob_client(account_url: str, container: str, blob: str) -> BlobClient:
+    return (
+        BlobServiceClient(
+            account_url=account_url,
+            credential=DefaultAzureCredential(),
+            retry_policy=retry_policy(),
+        )
+        .get_container_client(container=container)
+        .get_blob_client(blob=blob)
+    )
+
+
+def download_blob(account_url: str, container: str, path: str):
+    base = Path("~/Downloads/azure-blob-test").expanduser()
+    client = get_blob_client(
+        account_url=account_url,
+        container=container,
+        blob=str(path),
+    )
+    f = base / path
+
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.unlink(missing_ok=True)
+
+    print(f"Downloading {client.url} to {f}...")
+    with f.open("wb") as blob_dest_path:
+        size = client.download_blob(max_concurrency=5).readinto(blob_dest_path)
+        print(f"Downloaded {size} bytes from {client.url}...")
+
+
+def main():
+    parser = ArgumentParser(
+        prog="azure-storage-test",
+        description="Download a blob from Azure Storage",
+    )
+
+    parser.add_argument(
+        "-a",
+        "--account",
+        type=str,
+        default=None,
+        help="""The account_name
+             (hint: f"https://{account}.blob.core.windows.net")
+             """,
+    )
+
+    parser.add_argument(
+        "-c",
+        "--container",
+        type=str,
+        default=None,
+        help="The container",
+    )
+
+    parser.add_argument(
+        "blob",
+        type=str,
+        default=None,
+        help="The blob to download",
+    )
+    args = parser.parse_args()
+
+    download_blob(
+        account_url=f"https://{args.account}.blob.core.windows.net",
+        container=args.container,
+        path=args.blob,
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,72 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+
+################################################################################
+
+function error {
+    echo "ERROR: ${*}" >/dev/stderr
+}
+
+function netem-add {
+    local dev
+
+    dev="${1}"
+    shift
+
+    sudo tc qdisc add dev "${dev}" root netem "${@}"
+}
+
+function netem-delete {
+    sudo tc qdisc delete dev "${1}" root netem
+}
+
+function netem-show {
+    echo -e "${1}: $(tc qdisc show dev "${1}")"
+}
+
+function check-netdev {
+    local netdev
+
+    netdev="${1}"
+
+    if [ ! -L "/sys/class/net/${netdev}" ]; then
+        error "Not a net device: ${netdev}!"
+    fi
+}
+
+function usage {
+    cat <<EOM
+
+Usage: $(basename "${0}") [-h | --help] <on|off|show> <DEVICE>
+
+  -h, --help    Show this help message.
+
+Turn on some network latency on a network device.
+
+EOM
+}
+
+function main {
+    if [ "${#}" -ne 2 ]; then
+        usage
+        return 2
+    fi
+
+    check-netdev "${2}"
+
+    case "${1}" in
+        on)     netem-add    "${2}" delay 100s ;;
+        off)    netem-delete "${2}"            ;;
+        show)   netem-show   "${2}"            ;;
+        *)      usage
+                echo
+                error "Unknown command: ${1}"
+                return 2
+                ;;
+    esac
+}
+
+main "${@}"; exit
